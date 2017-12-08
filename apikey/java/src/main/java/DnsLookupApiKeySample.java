@@ -15,9 +15,9 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ApiKeyDNSQuery {
+public class DnsLookupApiKeySample {
 
-    private Logger logger = Logger.getLogger(ApiKeyDNSQuery.class.getName());
+    private Logger logger = Logger.getLogger(DnsLookupApiKeySample.class.getName());
 
     public static void main(String[]args) {
         String domainName = "test.com";
@@ -26,7 +26,7 @@ public class ApiKeyDNSQuery {
         String apiKey = "Your dns lookup api apiKey";
         String secretKey = "Your dns lookup api secretKey";
 
-        new ApiKeyDNSQuery().getDnsData(domainName, username, apiKey, secretKey);
+        new DnsLookupApiKeySample().getDnsData(domainName, username, apiKey, secretKey);
     }
 
     private String executeURL(String url) {
@@ -37,14 +37,14 @@ public class ApiKeyDNSQuery {
         try {
             c.executeMethod(m);
             BufferedReader reader =
-                new BufferedReader(
-                        new InputStreamReader(m.getResponseBodyAsStream()));
-        StringBuffer stringBuffer = new StringBuffer();
-        String str = "";
-        while((str = reader.readLine())!=null){
-            stringBuffer.append(str + "\n");
-        }
-        res = stringBuffer.toString();
+                    new BufferedReader(
+                            new InputStreamReader(m.getResponseBodyAsStream()));
+            StringBuffer stringBuffer = new StringBuffer();
+            String str = "";
+            while((str = reader.readLine())!=null){
+                stringBuffer.append(str + "\n");
+            }
+            res = stringBuffer.toString();
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Cannot get url", e);
         } finally {
