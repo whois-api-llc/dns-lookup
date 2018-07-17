@@ -1,27 +1,28 @@
+$url = 'https://www.whoisxmlapi.com/whoisserver/DNSService'
+
+$username = 'Your dns lookup api username'
+$password = 'Your dns lookup api password'
+$domainName = 'google.com'
+$type = '_all'
+
+$uri = $url`
+     + '?type=' + [uri]::EscapeDataString($type)`
+     + '&domainName=' + [uri]::EscapeDataString($domainName)`
+     + '&username=' + [uri]::EscapeDataString($username)`
+     + '&password=' + [uri]::EscapeDataString($password)
+
+#######################
+# Use an XML resource #
+#######################
+
+$j = Invoke-WebRequest -Uri $uri
+echo $j.content
+
 #######################
 # Use a JSON resource #
 #######################
-$uri = "https://www.whoisxmlapi.com/whoisserver/"`
-        +"DNSService?type=_all"`
-        +"&domainName=google.com"`
-        +"&username=Your_dns_lookup_api_username"`
-        +"&password=Your_dns_lookup_api_password"`
-        +"&outputFormat=json"
 
+$uri = $uri + '&outputFormat=json'
 
 $j = Invoke-WebRequest -Uri $uri
-echo "JSON:`n---" $j.content "`n"
-
-#######################
-# Use a XML resource #
-#######################
-
-$uri = "https://www.whoisxmlapi.com/whoisserver/"`
-        +"DNSService?type=_all"`
-        +"&domainName=google.com"`
-        +"&username=Your_dns_lookup_api_username"`
-        +"&password=Your_dns_lookup_api_password"`
-        +"&outputFormat=xml"
-
-$j = Invoke-WebRequest -Uri $uri
-echo "XML:`n---" $j.content
+echo $j.content | convertfrom-json | convertto-json -depth 10

@@ -1,41 +1,44 @@
 <?php
+
 $username = 'Your dns lookup api username';
-$apiKey = 'Your dns lookup api api_key';
-$secret = 'Your dns lookup api secret_key';
-$url = 'https://whoisxmlapi.com/whoisserver/DNSService?';
+$apiKey = 'Your dns lookup api key';
+$secret = 'Your dns lookup api secret key';
+
+$url = 'https://whoisxmlapi.com/whoisserver/DNSService';
 $timestamp = null;
+
 $domains = array(
     'google.com',
     'example.com',
     'whoisxmlapi.com',
     'twitter.com',
 );
+
+$type = '_all';
 $digest = null;
 
 generateParameters($timestamp, $digest, $username, $apiKey, $secret);
 
 foreach ($domains as $domain) {
-    $response = request($url, $username, $timestamp, $digest, $domain);
+    $response = request($url, $username, $timestamp, $digest, $domain, $type);
     if (strpos($response, 'Request timeout') !== false) {
         generateParameters($timestamp, $digest, $username, $apiKey, $secret);
-        $response = request($url, $username, $timestamp, $digest, $domain);
+        $response = request($url, $username,$timestamp,$digest,$domain,$type);
     }
     printResponse($response);
     echo '----------------------------' . "\n";
 }
 
-function generateParameters(
-    &$timestamp, &$digest, $username, $apiKey, $secret
-)
+function generateParameters(&$timestamp, &$digest, $username, $apiKey,$secret)
 {
     $timestamp = round(microtime(true) * 1000);
     $digest = generateDigest($username, $timestamp, $apiKey, $secret);
 }
 
-function request($url, $username, $timestamp, $digest, $domain)
+function request($url, $username, $timestamp, $digest, $domain, $type)
 {
-    $requestString = buildRequest($username, $timestamp, $digest, $domain);
-    return file_get_contents($url . $requestString);
+    $requestString = buildRequest($username,$timestamp,$digest,$domain,$type);
+    return file_get_contents($url . '?' . $requestString);
 }
 
 function printResponse($response)
@@ -46,10 +49,11 @@ function generateDigest($username, $timestamp, $apiKey, $secretKey)
 {
     $digest = $username . $timestamp . $apiKey;
     $hash = hash_hmac('md5', $digest, $secretKey);
+
     return urlencode($hash);
 }
 
-function buildRequest($username, $timestamp, $digest, $domain)
+function buildRequest($username, $timestamp, $digest, $domain, $type)
 {
     $requestString = 'requestObject=';
     $request = array(
@@ -59,11 +63,10 @@ function buildRequest($username, $timestamp, $digest, $domain)
     $requestJson = json_encode($request);
     $requestBase64 = base64_encode($requestJson);
     $requestString .= urlencode($requestBase64);
-    $requestString .= '&type=_all';
-    $requestString .= '&digest=';
-    $requestString .= $digest;
-    $requestString .= '&domainName=';
-    $requestString .= $domain;
+    $requestString .= '&type=' . urlencode($type);
+    $requestString .= '&digest=' . $digest;
+    $requestString .= '&domainName=' . urlencode($domain);
     $requestString .= '&outputFormat=json';
+
     return $requestString;
 }

@@ -1,10 +1,15 @@
 <?php
 
 $domain = 'example.com';
-$password = 'Your dns lookup api password';
 $username = 'Your dns lookup api username';
+$password = 'Your dns lookup api password';
+$type = 'A,SOA,TXT';
 
-$url ="http://www.whoisxmlapi.com/whoisserver/DNSService?domainName={$domain}"
-     ."&username={$username}&password={$password}&type=A,SOA,TXT";
+$url
+   = 'https://www.whoisxmlapi.com/whoisserver/DNSService'
+   . '?domainName=' . urlencode($domain)
+   . '&username=' . urlencode($username)
+   . '&password=' . urlencode($password)
+   . '&type=' . urlencode($type);
 
-print(file_get_contents($url));
+print(file_get_contents($url) . PHP_EOL);

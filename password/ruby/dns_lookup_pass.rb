@@ -1,34 +1,29 @@
-require 'open-uri'
+require 'erb'
 require 'json'
+require 'net/https'
+require 'uri'
 
 ########################
 # Fill in your details #
 ########################
-username = "Your dns lookup api username"
-password = "Your dns lookup api password"
+username = 'Your dns lookup api username'
+password = 'Your dns lookup api password'
 
-domains = [
-    'google.com',
-    'whoisxmlapi.com',
-    'twitter.com'
+domains = %w[
+  google.com
+  whoisxmlapi.com
+  twitter.com
 ]
 
-url = 'https://whoisxmlapi.com/whoisserver/DNSService?'
-type = "TXT"
-format = 'json'
+url = 'https://whoisxmlapi.com/whoisserver/DNSService'
+type = 'TXT'
 
-def build_request(username, password, format, type, domain)
-  request_string = 'type='
-  request_string += type
-  request_string += '&username='
-  request_string += username
-  request_string += '&password='
-  request_string += password
-  request_string += '&outputFormat='
-  request_string += format
-  request_string += '&domainName='
-  request_string += domain
-  return request_string
+def build_request(username, password, type, domain)
+  'type=' + ERB::Util.url_encode(type) +
+    '&username=' + ERB::Util.url_encode(username) +
+    '&password=' + ERB::Util.url_encode(password) +
+    '&outputFormat=json' +
+    '&domainName=' + ERB::Util.url_encode(domain)
 end
 
 def print_response(response)
@@ -37,9 +32,8 @@ def print_response(response)
 end
 
 domains.each do |domain|
-  request_string = build_request(username, password, format, type, domain)
-  response = open(url + request_string).read
+  request_string = build_request(username, password, type, domain)
+  response = Net::HTTP.get(URI.parse(url + '?' + request_string))
   print_response(response)
   puts "--------------------------------\n"
 end
-

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Security.Cryptography;
 using System.Net;
@@ -12,101 +13,126 @@ using Newtonsoft.Json;
  *
  */
 
-
-namespace Sample_CSharp_API_Client
+namespace ApiKeyDnsApi
 {
-    class ApiKeyDnsApi
+    public static class ApiKeyDnsApi
     {
-        static void Main(string[] args)
+        private static void Main()
         {
-            new ApiKeyDnsApi().Run();
-        }
+            const string username = "Your dns lookup api username";
+            const string apiKey = "Your dns lookup api key";
+            const string secret = "Your dns lookup api secret key";
+            const string url="https://whoisxmlapi.com/whoisserver/DNSService";
+            const string type = "_all";
 
-        public void Run()
-        {
-            string username = "Your dns lookup api username";
-            string apiKey = "Your dns lookup api api_key";
-            string secretKey = "Your dns lookup api secret_key";
-            string url = "https://whoisxmlapi.com/whoisserver/DNSService?";
             string[] domains =
             {
                 "google.com"
             };
-            string type = "_all";
-            this.PerformRequest(username, apiKey, secretKey, url, domains, type);
+            
+            ApiSample.PerformRequest(username,apiKey,secret,url,domains,type);
         }
-
-        protected void PerformRequest(string username, string apiKey,
-            string secretKey, string url, string[] domains, string type)
+    }
+    
+    public static class ApiSample
+    {
+        public static void PerformRequest(
+            string username,
+            string apiKey,
+            string secretKey,
+            string url,
+            IEnumerable<string> domains,
+            string type
+        )
         {
-            long timestamp = this.GetTimeStamp();
-            string digest = this.GenerateDigest(
-                username, apiKey, secretKey, timestamp
-            );
+            var timestamp = GetTimeStamp();
 
-            foreach (string domain in domains)
+            var digest = GenerateDigest(username, apiKey,secretKey,timestamp);
+
+            foreach (var domain in domains)
             {
                 try
                 {
-                    string request = this.BuildRequest(
-                        username, timestamp, digest, domain, type
-                    );
-                    string response = this.GetDnsData(url + request);
-                    if (response.IndexOf("Request timeout") > -1)
+                    var request =
+                        BuildRequest(username, timestamp, digest,domain,type);
+
+                    var response = GetDnsData(url + request);
+
+                    if (response.Contains("Request timeout"))
                     {
-                        timestamp = this.GetTimeStamp();
-                        digest = this.GenerateDigest(
-                            username, apiKey, secretKey, timestamp
-                        );
-                        request = this.BuildRequest(
-                            username, timestamp, digest, domain, type
-                        );
-                        response = this.GetDnsData(url + request);
+                        timestamp = GetTimeStamp();
+
+                        digest = GenerateDigest(
+                                    username, apiKey, secretKey, timestamp);
+
+                        request = BuildRequest(
+                                    username, timestamp, digest, domain,type);
+
+                        response = GetDnsData(url + request);
                     }
-                    this.PrintResponse(response);
+
+                    PrintResponse(response);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Console.WriteLine(
-                        "Error occurred\r\nCannot get dns data for "
-                        + domain
-                    );
+                        "Error occurred\r\nCannot get dns data for "+ domain);
                 }
             }
+
             Console.WriteLine("Press any key to continue...");
             Console.ReadKey();
         }
-
-        protected string GenerateDigest(
-            string username, string apiKey, string secretKey, long timestamp
+        
+        private static long GetTimeStamp()
+        {
+            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))
+                                         .TotalMilliseconds);
+        }
+        
+        private static string GenerateDigest(
+            string username,
+            string apiKey,
+            string secretKey,
+            long timestamp
         )
         {
-            string data = username + timestamp + apiKey;
-            HMACMD5 hmac = new HMACMD5(Encoding.UTF8.GetBytes(secretKey));
-            string hex = BitConverter.ToString(
-                hmac.ComputeHash(Encoding.UTF8.GetBytes(data))
-            );
+            var data = username + timestamp + apiKey;
+            var hmac = new HMACMD5(Encoding.UTF8.GetBytes(secretKey));
+
+            var hex = BitConverter.ToString(
+                        hmac.ComputeHash(Encoding.UTF8.GetBytes(data)));
+
             return hex.Replace("-", "").ToLower();
         }
 
-        protected string BuildRequest(
-            string username, long timestamp, string digest, string domain, string type
+        private static string BuildRequest(
+            string username,
+            long timestamp,
+            string digest,
+            string domain,
+            string type
         )
         {
-            UserData ud = new UserData();
-            ud.u = username;
-            ud.t = timestamp;
-            string userData = JsonConvert.SerializeObject(ud, Formatting.None);
-            var userDataBytes = System.Text.Encoding.UTF8.GetBytes(userData);
-            string userDataBase64 = System.Convert.ToBase64String(userDataBytes);
+            var ud = new UserData
+            {
+                u = username,
+                t = timestamp
+            };
 
-            StringBuilder requestString = new StringBuilder();
-            requestString.Append("requestObject=");
+            var userData = JsonConvert.SerializeObject(ud,Formatting.None);
+            var userDataBytes = Encoding.UTF8.GetBytes(userData);
+
+            var userDataBase64 =
+                Convert.ToBase64String(userDataBytes);
+
+            var requestString = new StringBuilder();
+            requestString.Append("?requestObject=");
             requestString.Append(Uri.EscapeDataString(userDataBase64));
             requestString.Append("&digest=");
             requestString.Append(Uri.EscapeDataString(digest));
             requestString.Append("&domainName=");
-            requestString.Append(domain);
+            requestString.Append(Uri.EscapeDataString(domain));
             requestString.Append("&type=");
             requestString.Append(Uri.EscapeDataString(type));
             requestString.Append("&outputFormat=json");
@@ -114,17 +140,20 @@ namespace Sample_CSharp_API_Client
             return requestString.ToString();
         }
 
-        protected string GetDnsData(string url)
+        private static string GetDnsData(string url)
         {
-            string response;
+            var response = "";
+
             try
             {
-                WebRequest wr = WebRequest.Create(url);
-                WebResponse wp = wr.GetResponse();
+                var wr = WebRequest.Create(url);
+                var wp = wr.GetResponse();
 
-                using (Stream data = wp.GetResponseStream())
+                using (var data = wp.GetResponseStream())
                 {
-                    using (StreamReader reader = new StreamReader(data))
+                    if (data == null)
+                        return response;
+                    using (var reader = new StreamReader(data))
                     {
                         response = reader.ReadToEnd();
                     }
@@ -134,12 +163,13 @@ namespace Sample_CSharp_API_Client
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                throw e;
+                throw new Exception(e.Message);
             }
+
             return response;
         }
-
-        protected void PrintResponse(string response)
+        
+        private static void PrintResponse(string response)
         {
             dynamic responseObject = JsonConvert.DeserializeObject(response);
 
@@ -153,16 +183,9 @@ namespace Sample_CSharp_API_Client
 
             Console.WriteLine(response);
         }
-
-        protected long GetTimeStamp()
-        {
-            return (long)(DateTime.UtcNow.Subtract(
-                new DateTime(1970, 1, 1)
-            ).TotalMilliseconds);
-        }
     }
 
-    class UserData
+    internal class UserData
     {
         public string u { get; set; }
         public long t { get; set; }

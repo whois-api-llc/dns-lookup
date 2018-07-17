@@ -1,11 +1,12 @@
+const crypto = require('crypto');
 const https = require('https');
 const queryString = require('querystring');
-const crypto = require('crypto');
 
-const url = 'https://whoisxmlapi.com/whoisserver/DNSService?';
+const url = 'https://whoisxmlapi.com/whoisserver/DNSService';
 const username = 'Your dns lookup api username';
-const apiKey = 'Your dns lookup api api_key';
-const secretKey = 'Your dns lookup api secret_key';
+const apiKey = 'Your dns lookup api key';
+const secretKey = 'Your dns lookup api secret key';
+const type = '_all';
 
 const domains = [
     'google.com',
@@ -15,22 +16,20 @@ const domains = [
 ];
 
 for(var i in domains) {
-    getDns(username, apiKey, secretKey, domains[i]);
+    getDns(username, apiKey, secretKey, domains[i], type);
 }
 
-function getDns(username, apiKey, secretKey, domain)
+function getDns(username, apiKey, secretKey, domain, type)
 {
     timestamp = (new Date).getTime();
     digest = generateDigest(username, timestamp, apiKey, secretKey);
-    var requestString = buildRequest(username, timestamp, digest, domain);
-    https.get(url + requestString, function (res) {
+    var requestString = buildRequest(username, timestamp, digest,domain,type);
+
+    https.get(url + '?' + requestString, function (res) {
         const statusCode = res.statusCode;
 
-        if (statusCode !== 200) {
-            console.log('Request failed: '
-                + statusCode
-            );
-        }
+        if (statusCode !== 200)
+            console.log('Request failed: ' + statusCode);
 
         var rawData = '';
 
@@ -41,20 +40,23 @@ function getDns(username, apiKey, secretKey, domain)
         res.on('end', function () {
             console.log(rawData);
         })
+
     }).on('error', function(e) {
         console.log("Error: " + e.message);
     });
-
 }
 
-function generateDigest(username, timestamp, apiKey, secretKey) {
+function generateDigest(username, timestamp, apiKey, secretKey)
+{
     var data = username + timestamp + apiKey;
     var hmac = crypto.createHmac('md5', secretKey);
     hmac.update(data);
+
     return hmac.digest('hex');
 }
 
-function buildRequest(username, timestamp, digest, domain) {
+function buildRequest(username, timestamp, digest, domain, type)
+{
     var data = {
         u: username,
         t: timestamp
@@ -65,7 +67,7 @@ function buildRequest(username, timestamp, digest, domain) {
 
     var request = {
         requestObject: dataBase64,
-        type: '_all',
+        type: type,
         digest: digest,
         domainName: domain,
         outputFormat: 'json'
